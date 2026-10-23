@@ -1,0 +1,12 @@
+metric,value
+Dt,0.0019291477815
+T0_volume,50.0005675108
+a,0.1
+b,0.05
+g,0.01
+ht,0.001
+loss,0.054888619956
+method,grad
+n_points,13
+optimized,"['Dt', 'rt', 'ht', 'a', 'b', 'g', 'T0_volume']"
+rt,0.2444696103

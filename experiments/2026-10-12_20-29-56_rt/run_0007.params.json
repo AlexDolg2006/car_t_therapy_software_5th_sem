@@ -1,0 +1,47 @@
+{
+  "grid": {
+    "Nx": 100,
+    "Ny": 100,
+    "Lx": 100.0,
+    "Ly": 100.0,
+    "Nt": 2000,
+    "Tt": 100.0
+  },
+  "tumor": {
+    "T0_volume": 68.54,
+    "sigma": 0.003,
+    "x_center": 20.0,
+    "y_center": 20.0
+  },
+  "therapy": {
+    "method": "explicit_euler",
+    "bc": "neumann",
+    "dose_day": 0.0,
+    "day_chemo": 30.0,
+    "day_immuno": 30.0
+  },
+  "params": {
+    "Dc": 1.0,
+    "Dt": 0.0001,
+    "Dch": 1.0,
+    "Dim": 1.0,
+    "rc": 1.0,
+    "rt": 0.16999999999999998,
+    "hc": 1.0,
+    "ht": 0.001,
+    "kct": 1.0,
+    "ki": 1.0,
+    "uc": 1.0,
+    "ut": 1.0,
+    "ui": 1.0,
+    "a": 0.1,
+    "b": 0.05,
+    "g": 0.01,
+    "deltach": 1.0,
+    "deltaim": 1.0
+  },
+  "vessels": {
+    "count": 33,
+    "seed": 42
+  }
+}

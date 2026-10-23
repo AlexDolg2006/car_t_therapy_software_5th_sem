@@ -1,0 +1,14 @@
+{
+  "Dt": 1.9291477815e-03,
+  "rt": 0.2444696103,
+  "ht": 0.0010000000,
+  "a": 0.1000000000,
+  "b": 0.0500000000,
+  "g": 0.0100000000,
+  "T0_volume": 50.0005675108,
+  "loss": 5.4888619956e-02,
+  "method": "grad",
+  "n_points": 13,
+  "optimized": ["Dt", "rt", "ht", "a", "b", "g", "T0_volume"],
+  "traj_csv": "/home/alexandr/2_nauch_rab_1/desktop_prog/data/best_params_traj.csv"
+}

@@ -1,0 +1,12 @@
+   metric       value
+       Dt     0.00005
+T0_volume  272.970598
+        a         0.1
+        b        0.05
+        g        0.01
+       ht        0.05
+     loss    1.256416
+   method       coord
+ n_points          13
+optimized [T0_volume]
+       rt        0.05

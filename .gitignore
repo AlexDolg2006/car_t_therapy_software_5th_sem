@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+myenv/
+.idea/
+.vscode/
+
+# Сборка C++
+modules/solver/cpp/build/
+bin/
+
+# Секреты и локальные настройки
+.env
+*.key
+*.pem
+*.token
+
+# Системное
+.DS_Store
+Thumbs.db
