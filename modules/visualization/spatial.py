@@ -1,16 +1,27 @@
 import numpy as np
 import matplotlib as mpl
+import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
+
+# --- Настройка шрифта: Times New Roman (с засечками), увеличенный размер ---
+plt.rcParams['font.family'] = 'serif'
+plt.rcParams['font.serif'] = ['Times New Roman', 'Times', 'DejaVu Serif']
+plt.rcParams['font.size'] = 14          # Базовый размер шрифта
+plt.rcParams['axes.titlesize'] = 16     # Размер заголовка
+plt.rcParams['axes.labelsize'] = 14     # Размер подписей осей
+plt.rcParams['xtick.labelsize'] = 14    # Размер цифр по оси X (увеличен)
+plt.rcParams['ytick.labelsize'] = 14    # Размер цифр по оси Y (увеличен)
+# ---------------------------------------------------------------------------
 
 # Определяем переменные и их подписи
 VARIABLES = ['C', 'T', 'I', 'a_t', 'Ch', 'Im']
 TITLES = {
-    'C':   'CAR-T клетки',
-    'T':   'Опухолевые клетки',
-    'I':   'Иммуносупрессия',
-    'a_t': 'Активация CAR-T',
-    'Ch':  'Хемокины',
-    'Im':  'Иммуномодуляторы',
+    'C':   '',
+    'T':   '',
+    'I':   '',
+    'a_t': '',
+    'Ch':  '',
+    'Im':  '',
 }
 
 # Задаем красивые цветовые карты (colormaps) для каждой переменной
@@ -47,7 +58,7 @@ def draw_spatial(fig: Figure, df, day: float, variable: str = 'T'):
     Z_raw = Z.copy()
     
     # Логарифмирование для опухоли, если значения слишком малы
-    cbar_label = 'Концентрация'
+    cbar_label = 'Концентрация (кл / мм³)'
     if variable == 'T' and Z.max() < 0.1:
         Z = np.log10(Z + 1e-20)
         cbar_label = 'log10(плотность)'
@@ -56,27 +67,30 @@ def draw_spatial(fig: Figure, df, day: float, variable: str = 'T'):
     cmap = COLORMAPS.get(variable, 'viridis')
 
     # 1. Заливка (плавный градиент)
-    # Используем 50 уровней, чтобы переходы были гладкими
     contour = ax.contourf(X, Y, Z, levels=50, cmap=cmap)
     
-    # 2. Контурные линии (опционально, для красоты)
+    # 2. Контурные линии
     ax.contour(X, Y, Z, levels=10, colors='black', linewidths=0.3, alpha=0.3)
 
     # Добавляем Colorbar
     cbar = fig.colorbar(contour, ax=ax, fraction=0.046, pad=0.04)
-    cbar.set_label(cbar_label)
+    cbar.set_label(cbar_label, fontsize=14)
+    cbar.ax.tick_params(labelsize=13)  # размер цифр на цветовой шкале
 
     # Оформление осей
-    ax.set_xlabel('x')
-    ax.set_ylabel('y')
-    ax.set_title(f"{TITLES.get(variable, variable)} — день {day:.1f}")
+    ax.set_xlabel('x (мм)')
+    ax.set_ylabel('y (мм)')
+    ax.set_title(f"{TITLES.get(variable, variable)}")
     ax.grid(True, linestyle='--', linewidth=0.5, color='gray', alpha=0.5)
     ax.set_aspect('equal')
+
+    # Принудительно задаем размер шрифта для цифр на осях (страховка)
+    ax.tick_params(axis='both', which='major', labelsize=14)
 
     # Выводим максимальное значение в углу
     val = np.nanmax(Z_raw)
     ax.text(0.03, 0.97, f"max={val:.3e}",
-            transform=ax.transAxes, fontsize=10, va='top',
+            transform=ax.transAxes, fontsize=12, va='top',
             bbox=dict(boxstyle="round,pad=0.3", facecolor="white",
                       edgecolor="black", linewidth=0.8, alpha=0.85))
 

@@ -9,7 +9,9 @@ extern double DAY_CART_INJECTION;
 extern double DAY_CHEMO_START;
 extern double DAY_IMMUNO_START;
 
-// Инициализация сосудов с привязкой к размеру домена
+// Ширина сглаживания импульсов по времени (дни). 0 = исходные разрывные.
+extern double TIME_SMOOTH;
+
 void init_vessels(int N, int seed, double Lx, double Ly);
 
 double uC (double t, double x, double y);

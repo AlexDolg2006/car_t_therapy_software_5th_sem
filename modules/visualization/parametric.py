@@ -3,20 +3,67 @@ import pandas as pd
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_agg  import FigureCanvasAgg
+import matplotlib.pyplot as plt
 
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                                QComboBox)
 from PySide6.QtCore import Qt
 
+# --- Настройка шрифта: Times New Roman (с засечками), увеличенный размер ---
+plt.rcParams['font.family'] = 'serif'
+plt.rcParams['font.serif'] = ['Times New Roman', 'Times', 'DejaVu Serif']
+plt.rcParams['font.size'] = 18
+plt.rcParams['axes.titlesize'] = 20
+plt.rcParams['axes.labelsize'] = 18
+plt.rcParams['xtick.labelsize'] = 18
+plt.rcParams['ytick.labelsize'] = 18
+plt.rcParams['legend.fontsize'] = 14
+plt.rcParams['mathtext.fontset'] = 'stix'   # шрифт для LaTeX-формул (похож на Times)
+# ---------------------------------------------------------------------------
 
 FIELDS = {
-    "C":   ("CAR-T клетки C",       "steelblue"),
-    "T":   ("Опухоль T",            "firebrick"),
-    "I":   ("Иммуносупрессия I",    "darkorange"),
-    "a_t": ("Активация a_t",        "purple"),
-    "Ch":  ("Хемокины Ch",          "seagreen"),
-    "Im":  ("Иммуномодуляторы Im",  "goldenrod"),
+    "C":   (r"CAR-T клетки $C$",                 "steelblue"),
+    "T":   (r"Концентрация $T$ (кл / мм³)",      "firebrick"),
+    "I":   (r"Иммуносупрессия $I$",              "darkorange"),
+    "a_t": (r"Активация $a_t$",                  "purple"),
+    "Ch":  (r"Хемокины $Ch$",                    "seagreen"),
+    "Im":  (r"Иммуномодуляторы $Im$",            "goldenrod"),
+    # если у вас в данных ключи "rt" и "Dt", оставляем их как ключи, а подпись — LaTeX
+    "rt":  (r"Скорость роста $r_T$",             "crimson"),
+    "r_T": (r"Скорость роста $r_T$",             "crimson"),
+    "Dt":  (r"Коэффициент диффузии $D_T$",       "navy"),
+    "D_T": (r"Коэффициент диффузии $D_T$",       "navy"),
 }
+
+
+def _latex_label(name: str) -> str:
+    """
+    Преобразует имя параметра в LaTeX-строку для подписи оси.
+    """
+    # 1) Явные соответствия для самых частых случаев
+    mapping = {
+        "rt":   r"$r_T ({сут}^{-1})$",
+        "r_T":  r"$r_T ({сут}^{-1})$",
+        "rT":   r"$r_T ({сут}^{-1})$",
+        "dt":   r"$D_T (мм² / сут)$",
+        "Dt":   r"$D_T (мм² / сут)$",
+        "D_T":  r"$D_T (мм² / сут)$",
+        "dT":   r"$D_T (мм² / сут)$",
+        "a_t":  r"$a_t$",
+        "Ch":   r"$Ch$",
+        "Im":   r"$Im$",
+        "C":    r"$C$",
+        "T":    r"$T$",
+        "I":    r"$I$",
+    }
+    if name in mapping:
+        return mapping[name]
+    # 2) Общий случай: "some_T" -> "$\mathrm{some}_T$"
+    if "_" in name:
+        base, sub = name.split("_", 1)
+        return rf"$\mathrm{{{base}}}_{{{sub}}}$"
+    # 3) Фолбэк — как есть
+    return name
 
 
 class ParametricView(QWidget):
@@ -32,7 +79,9 @@ class ParametricView(QWidget):
         for key, (title, _) in FIELDS.items():
             self.cb_field.addItem(title, userData=key)
         self.cb_field.currentIndexChanged.connect(self._redraw)
+        self.cb_field.setStyleSheet("font-size: 16px;")
         self.lbl_info = QLabel("данных нет")
+        self.lbl_info.setStyleSheet("font-size: 16px;")
         top.addWidget(QLabel("Поле:"))
         top.addWidget(self.cb_field)
         top.addStretch()
@@ -70,16 +119,17 @@ class ParametricView(QWidget):
     def _draw_all(self):
         fig = self.fig; fig.clear()
         ax = fig.add_subplot(111)
-        param = self.summary["param"].iloc[0]
+        param = _latex_label(self.summary["param"].iloc[0])
         x = self.summary["value"]
         for k, (title, color) in FIELDS.items():
             if k in self.summary.columns:
                 ax.plot(x, self.summary[k], color=color,
-                        linewidth=2, marker="o", markersize=4, label=title)
+                        linewidth=2.5, marker="o", markersize=6, label=title)
         ax.set_xlabel(param); ax.set_ylabel("Значение в точке (день)")
         ax.set_title(f"Зависимость от {param} — все поля")
         ax.grid(True, linestyle="--", alpha=0.4)
-        ax.legend(fontsize=9, loc="best")
+        ax.legend(fontsize=14, loc="best")
+        ax.tick_params(axis='both', labelsize=18)
         fig.tight_layout(); fig.canvas.draw_idle()
 
     def _draw_one(self, key):
@@ -87,14 +137,15 @@ class ParametricView(QWidget):
         ax = fig.add_subplot(111)
         if key not in self.summary.columns:
             ax.set_title("Нет данных"); fig.canvas.draw_idle(); return
-        param = self.summary["param"].iloc[0]
+        param = _latex_label(self.summary["param"].iloc[0])
         x = self.summary["value"]
         title, color = FIELDS[key]
         ax.plot(x, self.summary[key], color=color,
-                linewidth=2, marker="o", markersize=5, label=title)
+                linewidth=2.5, marker="o", markersize=7, label=title)
         ax.set_xlabel(param); ax.set_ylabel(title)
         ax.set_title(f"{title} — зависимость от {param}")
         ax.grid(True, linestyle="--", alpha=0.4)
+        ax.tick_params(axis='both', labelsize=18)
         fig.tight_layout(); fig.canvas.draw_idle()
 
     def _draw_empty(self):
@@ -110,18 +161,20 @@ class ParametricView(QWidget):
             raise RuntimeError("Нет данных для сохранения")
         out_dir = Path(out_dir) / "plots"
         out_dir.mkdir(parents=True, exist_ok=True)
-        param = self.summary["param"].iloc[0]
+        param = _latex_label(self.summary["param"].iloc[0])
 
         # 1) все поля на одном графике
-        fig = Figure(figsize=(9, 7)); FigureCanvasAgg(fig)
+        fig = Figure(figsize=(11, 8)); FigureCanvasAgg(fig)
         ax = fig.add_subplot(111)
         for k, (title, color) in FIELDS.items():
             if k in self.summary.columns:
                 ax.plot(self.summary["value"], self.summary[k],
-                        color=color, lw=2, marker="o", ms=4, label=title)
+                        color=color, lw=2.5, marker="o", ms=6, label=title)
         ax.set_xlabel(param); ax.set_ylabel("Значение в точке (день)")
         ax.set_title(f"Зависимость от {param} — все поля")
-        ax.grid(True, ls="--", alpha=0.4); ax.legend(fontsize=9)
+        ax.grid(True, ls="--", alpha=0.4)
+        ax.legend(fontsize=14)
+        ax.tick_params(axis='both', labelsize=18)
         fig.tight_layout()
         fig.savefig(out_dir / "all_fields.png", dpi=150)
 
@@ -129,13 +182,14 @@ class ParametricView(QWidget):
         for k, (title, color) in FIELDS.items():
             if k not in self.summary.columns:
                 continue
-            fig = Figure(figsize=(8, 5)); FigureCanvasAgg(fig)
+            fig = Figure(figsize=(9, 6)); FigureCanvasAgg(fig)
             ax = fig.add_subplot(111)
             ax.plot(self.summary["value"], self.summary[k],
-                    color=color, lw=2, marker="o", ms=5, label=title)
+                    color=color, lw=2.5, marker="o", ms=7, label=title)
             ax.set_xlabel(param); ax.set_ylabel(title)
             ax.set_title(f"{title} — зависимость от {param}")
             ax.grid(True, ls="--", alpha=0.4)
+            ax.tick_params(axis='both', labelsize=18)
             fig.tight_layout()
             fig.savefig(out_dir / f"{k}.png", dpi=150)
 

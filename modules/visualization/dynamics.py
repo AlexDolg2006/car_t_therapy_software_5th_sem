@@ -29,8 +29,8 @@ def draw_total_dynamics(fig: Figure, df, _day=None, _var=None):
                     facecolor="none", edgecolor="black",
                     hatch="///", linewidth=0.0)
     ax.set_xlabel("День")
-    ax.set_ylabel("Объём опухоли (мм²)")
-    ax.set_title("Объём опухоли")
+    ax.set_ylabel("Объём опухоли (мм³)")
+    ax.set_title("")
     ax.grid(True, linestyle="--", linewidth=0.5, color="gray", alpha=0.7)
     ax.set_xlim(left=0); ax.set_ylim(bottom=0)
     fig.tight_layout()

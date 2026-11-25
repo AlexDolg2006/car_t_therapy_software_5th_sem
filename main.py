@@ -1,6 +1,5 @@
 import sys
 from pathlib import Path
-import copy
 import pandas as pd
 
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget,
@@ -48,50 +47,6 @@ class SolverThread(QThread):
             self.signals.ok.emit(str(path))
         except Exception as e:
             self.signals.fail.emit(str(e))
-
-
-# ★ Поток для сравнения трёх методов (чистая модель, без терапии)
-class CompareThread(QThread):
-    finished = Signal(object, object, object, object)  # exp_df, df_exp, df_imp, df_rk
-    error    = Signal(str)
-
-    def __init__(self, runner, base_cfg, csv_path):
-        super().__init__()
-        self.runner = runner
-        self.base_cfg = base_cfg
-        self.csv_path = csv_path
-
-    def run(self):
-        try:
-            exp_df = None
-            if self.csv_path and Path(self.csv_path).exists():
-                exp_df = pd.read_csv(self.csv_path)
-
-            methods = ["explicit_euler", "implicit_euler", "rk4"]
-            results = {}
-
-            for m in methods:
-                cfg = copy.deepcopy(self.base_cfg)
-                cfg.therapy.method = m
-                
-                # ★ ОТКЛЮЧАЕМ ТЕРАПИЮ (модель чистой опухоли)
-                cfg.therapy.dose_day = 0.0       
-                cfg.therapy.day_chemo = 9999.0   
-                cfg.therapy.day_immuno = 9999.0  
-                cfg.vessels.count = 0            
-                
-                out_csv = DATA_DIR / f"compare_{m}.csv"
-                self.runner.run(cfg, out_csv)
-                results[m] = pd.read_csv(out_csv)
-
-            self.finished.emit(
-                exp_df,
-                results["explicit_euler"],
-                results["implicit_euler"],
-                results["rk4"],
-            )
-        except Exception as e:
-            self.error.emit(str(e))
 
 
 class MainWindow(QMainWindow):
@@ -160,9 +115,20 @@ class MainWindow(QMainWindow):
         self.panel_opt.plotDataReady.connect(self.panel_viz.update_optimization_chart)
         self.panel_sweep.sweepFinished.connect(self._on_sweep_done)
 
-        # ★ ИСПРАВЛЕНО: связываем сигнал и слот с одним аргументом (str)
         self.panel_opt.csvSelected.connect(self._on_csv_selected)
-        self.panel_viz.compareRequested.connect(self._on_compare_requested)
+
+        # VisualizationPanel получает актуальный cfg
+        self.panel_viz.set_cfg_provider(lambda: self.panel_cfg.get_config())
+
+        # Прогресс и завершение сравнения методов — в нижнюю полосу
+        self.panel_viz.compareProgress.connect(
+            lambda p, m: (self.progress.setValue(p),
+                          self.status.setText(m))
+        )
+        self.panel_viz.compareFinished.connect(
+            lambda: (self.progress.setValue(100),
+                     self.btn_run.setEnabled(True))
+        )
 
     def _on_progress(self, value: int):
         self.progress.setValue(value)
@@ -188,32 +154,13 @@ class MainWindow(QMainWindow):
         except Exception as e:
             self.status.setText(f"Серия готова, но графики не сохранены: {e}")
 
-    # ★ Слот принимает только один аргумент (csv_path)
     def _on_csv_selected(self, path: str):
         self.panel_viz.last_exp_csv = path
-
-    def _on_compare_requested(self, csv_path: str):
-        cfg = self.panel_cfg.get_config()
-        self.btn_run.setEnabled(False)
-        self.progress.setValue(0)
-        self.status.setText("Запуск сравнения 3 методов...")
-
-        self.compare_thread = CompareThread(self.runner, cfg, csv_path)
-        self.compare_thread.finished.connect(self._on_compare_done)
-        self.compare_thread.error.connect(self._on_compare_fail)
-        self.compare_thread.start()
-
-    def _on_compare_done(self, exp_df, df_exp, df_imp, df_rk):
-        self.btn_run.setEnabled(True)
-        self.progress.setValue(100)
-        self.status.setText("Сравнение 3 методов завершено.")
-        self.panel_viz.update_compare_chart(exp_df, df_exp, df_imp, df_rk)
-
-    def _on_compare_fail(self, msg: str):
-        self.btn_run.setEnabled(True)
-        self.progress.setValue(0)
-        self.status.setText("Ошибка сравнения.")
-        QMessageBox.critical(self, "Ошибка сравнения методов", msg)
+        try:
+            exp_df = pd.read_csv(path)
+            self.panel_viz.update_compare_chart(exp_df)
+        except Exception as e:
+            print(f"[warn] csv: {e}")
 
     def on_run(self):
         cfg = self.panel_cfg.get_config()
@@ -237,7 +184,8 @@ class MainWindow(QMainWindow):
             self.panel_viz.on_data_ready(df)
             self.right_tabs.setCurrentWidget(self.panel_viz)
         except Exception as e:
-            QMessageBox.critical(self, "Ошибка", f"Не удалось прочитать CSV:\n{e}")
+            QMessageBox.critical(self, "Ошибка",
+                                 f"Не удалось прочитать CSV:\n{e}")
 
     def on_fail(self, msg):
         self.btn_run.setEnabled(True)
